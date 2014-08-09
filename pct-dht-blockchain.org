@@ -1,0 +1,72 @@
+Currently the only point of centralization the Popcorn-Time app has is it's
+dependency on a source API. we use YTS for movies and EZTV for shows (soon
+we'll be adding support for many other APIs).
+
+This is problematic, as downing the API or simply requiring to change DNS
+name, leaves all installed Popcorn-Time instances dangeling (we hardcode the
+dns name into the app).
+
+I have been thinking about ways to mitigate that issue, the first one is
+quite brutal but should work. We could distribute the DB (NeDB format) on a
+torrent, and distribute the magnet-link to the latest torrent using the
+bittorrent DHT (or any other that we could properly initialize).
+
+when we do an API push (pulling the existing API from a safe place on the
+internet), we'd just sign and publish the new magnet on the DHT. Then, the
+only thing we have to ship is the key we'd be signing updates with. also it
+makes us robust to 3rd-party modifications.
+
+as we'd have a channel to push random-data to our users, we can use the same
+mechanism to push plugins, again serving them as a distribution pack signed
+with our main key. We could support 3rd-party plugins by signing their keys
+with the main Popcorn-Time key, or give the oportunity to users to import
+other keys into their system.
+
+actually, this makes a base for a design of 'distributed app store', where
+we'd just have to centraly sign a develloper key to have him publish
+whatever he likes. If users complain, or maleware is found, we'd revoke the
+key and all the packages sign ed with it will be marked as supourious.
+Furthermore keys can have trust levels, per-app, per-genre, global, and we
+can have devellopers push signage of each other's key, making a web-of-trust
+renforcing the user security.
+
+Everything being open source, other projects can use other DHTs to project
+their own appstore for whatever they need (even for a same plateform), and
+co-signage between App-Stores would make the web-of-trust grow, it'd be easy
+then to create devellopers profiles (identified by their keys only,
+providing forward-anonymity if need be) to gain a cross-app/cross-project
+trust recognition. (we could easily share a signed install database to have
+real-time rating of whose code is actually used by how many).
+
+It also makes it possible for trusted devellopers to sign other's packages
+to push them in (that would require a certain trust degree) and we'd get
+Debian-Style mentor-system all built-in.
+
+furthermore, we can require n (probably 20 is a good value) signatures to
+automatically include a new develloper to the next priviledges step.
+
+Coin-style monetization on top of that design is fairly easy and
+straightforward, either via an active kudo-system (a la flattr), or based on
+the before-mentioned metrics.
+
+Now, the social part of it as you can see is quite elegant and works well,
+but it requires spotless technical implementation to be viable.
+
+This all scheme is quite weak as it is hard to measure and foresee how the
+DHT swarn will react to this, torrent hopping is not really efficient and we
+may have nodes always one-up late to get peers for the API version they are
+trying to get. We could require everyclient to seed for Long Term API
+snapshots (i.e. a base that would last 24h, updates lasting 15-30 mins), but
+it's quite hackish and clearly a hack-patch.
+
+Another way, would be to distribute changes to the API using a blockchain.
+The property bitcoins transaction history have are exactly the ones we want
+for a API, every API update will be a new transaction and we know that it's
+an effective way to distribute changes. Today our show-db dumps to 32Mb, and
+bzip compresses to 4.4Mb, it looks like it's dataspace that can be handled
+by the blockchain data structure. furthermore, we can drop many update logs,
+as we are really only intersted by the last version.
+
+Idealy, all this would need to be done in JS so that it's easier to port it
+to our other platforms (android, ios, …), but we could deal with C/C++
+modules.
